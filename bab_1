@@ -1,0 +1,102 @@
+import 'dart:async';
+
+enum Role { Admin, Pelanggan }
+
+class Produk {
+  String namaProduk;
+  double harga;
+  bool tersedia;
+
+  Produk({required this.namaProduk, required this.harga, required this.tersedia});
+}
+
+class Pengguna {
+  String nama;
+  int umur;
+  late List<Produk> daftarProduk;
+  Role? peran;
+
+  Pengguna({required this.nama, required this.umur, this.peran}) {
+    daftarProduk = [];
+  }
+}
+
+class AdminPengguna extends Pengguna {
+  AdminPengguna({required String nama, required int umur}) : super(nama: nama, umur: umur) {
+    peran = Role.Admin;
+  }
+
+  void tambahProduk(Produk produk) {
+    if (produk.tersedia) {
+      daftarProduk.add(produk);
+    } else {
+      throw Exception('Produk tidak tersedia dalam stok');
+    }
+  }
+
+  void hapusProduk(Produk produk) {
+    daftarProduk.remove(produk);
+  }
+}
+
+class PelangganPengguna extends Pengguna {
+  PelangganPengguna({required String nama, required int umur}) : super(nama: nama, umur: umur) {
+    peran = Role.Pelanggan;
+  }
+
+  void lihatProduk() {
+    for (var produk in daftarProduk) {
+      print('Produk: ${produk.namaProduk}, Harga: ${produk.harga}, Tersedia: ${produk.tersedia}');
+    }
+  }
+}
+
+Future<void> ambilDetailProduk(Produk produk) async {
+  print('Mengambil detail untuk ${produk.namaProduk}...');
+  await Future.delayed(Duration(seconds: 2)); // Simulasi penundaan jaringan
+  print('Detail produk diambil untuk ${produk.namaProduk}');
+}
+
+void main() async {
+  try {
+    // Membuat katalog produk menggunakan Map
+    Map<String, Produk> katalogProduk = {
+      'Laptop': Produk(namaProduk: 'Laptop', harga: 1500.00, tersedia: true),
+      'Telepon': Produk(namaProduk: 'Telepon', harga: 800.00, tersedia: true),
+      'Headphone': Produk(namaProduk: 'Headphone', harga: 150.00, tersedia: false),
+    };
+
+    // Menggunakan Set untuk menghindari duplikasi produk dalam daftar pengguna
+    Set<Produk> produkUnik = {};
+
+    // Membuat AdminPengguna dan menambah produk
+    AdminPengguna admin = AdminPengguna(nama: 'Alice', umur: 30);
+    admin.tambahProduk(katalogProduk['Laptop']!);
+    produkUnik.add(katalogProduk['Laptop']!);
+
+    // Mencoba menambahkan produk duplikat
+    produkUnik.add(katalogProduk['Laptop']!); // Duplikat, akan diabaikan oleh Set
+
+    // Menambahkan produk lain
+    admin.tambahProduk(katalogProduk['Telepon']!);
+    produkUnik.add(katalogProduk['Telepon']!);
+
+    // Mencoba menambah produk yang stoknya habis
+    try {
+      admin.tambahProduk(katalogProduk['Headphone']!);
+    } on Exception catch (e) {
+      print('Kesalahan: $e');
+    }
+
+    // Mengambil detail produk secara asinkron
+    await ambilDetailProduk(katalogProduk['Laptop']!);
+
+    // Menampilkan produk untuk pelanggan
+    PelangganPengguna pelanggan = PelangganPengguna(nama: 'Bob', umur: 25);
+    pelanggan.daftarProduk = admin.daftarProduk;
+    print('Pelanggan melihat daftar produk:');
+    pelanggan.lihatProduk();
+  } catch (e) {
+    print('Terjadi kesalahan: $e');
+  }
+}
