@@ -1,0 +1,133 @@
+import 'dart:async';
+
+// Enum untuk kategori produk dan fase proyek
+enum KategoriProduk { DataManagement, NetworkAutomation }
+enum FaseProyek { Perencanaan, Pengembangan, Evaluasi }
+
+// Kelas Produk dengan logika harga dan diskon
+class Product {
+  final String namaProduk;
+  double harga;
+  final KategoriProduk kategori;
+  int jumlahTerjual = 0;
+
+  Product(this.namaProduk, this.harga, this.kategori) {
+    if (kategori == KategoriProduk.NetworkAutomation && harga < 200000) {
+      throw Exception('Harga untuk NetworkAutomation harus minimal 200.000');
+    } else if (kategori == KategoriProduk.DataManagement && harga >= 200000) {
+      throw Exception('Harga untuk DataManagement harus di bawah 200.000');
+    }
+  }
+
+  void applyDiscount() {
+    if (kategori == KategoriProduk.NetworkAutomation && jumlahTerjual > 50) {
+      var discountedPrice = harga * 0.85;
+      harga = discountedPrice < 200000 ? 200000 : discountedPrice;
+      print('Diskon diterapkan pada $namaProduk. Harga sekarang: $harga');
+    }
+  }
+}
+
+// Mixin untuk kinerja karyawan
+mixin Kinerja {
+  int _produktivitas = 0;
+  DateTime? _lastUpdate;
+
+  int get produktivitas => _produktivitas;
+
+  void updateProduktivitas(int value) {
+    if (_lastUpdate == null || DateTime.now().difference(_lastUpdate!).inDays >= 30) {
+      if (value < 0 || value > 100) {
+        throw Exception('Produktivitas harus dalam rentang 0 hingga 100');
+      }
+      _produktivitas = value;
+      _lastUpdate = DateTime.now();
+    } else {
+      print('Produktivitas hanya bisa diperbarui setiap 30 hari.');
+    }
+  }
+}
+
+// Kelas dasar Karyawan dengan Subkelas dan Peran
+abstract class Employee with Kinerja {
+  final String nama;
+  final int umur;
+  final String peran;
+
+  Employee(this.nama, {required this.umur, required this.peran});
+}
+
+class KaryawanTetap extends Employee {
+  KaryawanTetap(String nama, {required int umur, required String peran})
+      : super(nama, umur: umur, peran: peran);
+}
+
+class KaryawanKontrak extends Employee {
+  KaryawanKontrak(String nama, {required int umur, required String peran})
+      : super(nama, umur: umur, peran: peran);
+}
+
+// Kelas Proyek dengan fase
+class Proyek {
+  FaseProyek fase = FaseProyek.Perencanaan;
+  List<Employee> timProyek = [];
+  DateTime? tanggalMulai;
+
+  void tambahkanKaryawan(Employee karyawan) {
+    if (timProyek.length < 20) {
+      timProyek.add(karyawan);
+    } else {
+      throw Exception('Maksimal 20 karyawan aktif diperbolehkan');
+    }
+  }
+
+  void beralihKePengembangan() {
+    if (fase == FaseProyek.Perencanaan && timProyek.length >= 5) {
+      fase = FaseProyek.Pengembangan;
+      tanggalMulai = DateTime.now();
+      print('Proyek beralih ke fase Pengembangan');
+    } else {
+      print('Syarat untuk beralih ke Pengembangan belum terpenuhi');
+    }
+  }
+
+  void beralihKeEvaluasi() {
+    if (fase == FaseProyek.Pengembangan &&
+        tanggalMulai != null &&
+        DateTime.now().difference(tanggalMulai!).inDays > 45) {
+      fase = FaseProyek.Evaluasi;
+      print('Proyek beralih ke fase Evaluasi');
+    } else {
+      print('Syarat untuk beralih ke Evaluasi belum terpenuhi');
+    }
+  }
+}
+
+// Fungsi utama untuk simulasi
+void main() {
+  // Buat beberapa produk
+  var produk1 = Product('Data Manager', 150000, KategoriProduk.DataManagement);
+  var produk2 = Product('Network Optimizer', 250000, KategoriProduk.NetworkAutomation);
+  
+  // Simulasi penjualan produk untuk NetworkAutomation
+  produk2.jumlahTerjual = 60;
+  produk2.applyDiscount();
+
+  // Buat karyawan tetap dan kontrak
+  var karyawan1 = KaryawanTetap('Alice', umur: 28, peran: 'Developer');
+  var karyawan2 = KaryawanKontrak('Bob', umur: 32, peran: 'NetworkEngineer');
+
+  // Update produktivitas
+  karyawan1.updateProduktivitas(90);
+  print('Produktivitas ${karyawan1.nama}: ${karyawan1.produktivitas}');
+
+  // Proses manajemen proyek
+  var proyek1 = Proyek();
+  proyek1.tambahkanKaryawan(karyawan1);
+  proyek1.tambahkanKaryawan(karyawan2);
+
+  proyek1.beralihKePengembangan();
+  // Simulasi setelah 46 hari
+  proyek1.tanggalMulai = DateTime.now().subtract(Duration(days: 46));
+  proyek1.beralihKeEvaluasi();
+}
